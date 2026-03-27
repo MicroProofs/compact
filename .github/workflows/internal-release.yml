@@ -15,6 +15,7 @@ on:
         options:
           - main
           - release/midnight
+          - issue-61
       include_macos_intel:
         description: 'Include MacOS Intel build'
         required: true
@@ -325,6 +326,30 @@ jobs:
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: macos-release-x86_64
+
+      - name: Patch release notes title in zip artifacts
+        run: |
+          VERSION="${{ inputs.version }}"
+          # Strip leading 'v'
+          CLEAN_VERSION="${VERSION#v}"
+          NOTES_FILENAME=$(basename "${{ needs.setup.outputs.release_notes_file }}")
+
+          for zip in compactc_${{ needs.setup.outputs.clean_tag }}_*.zip; do
+            echo "Patching $zip..."
+            # Extract the release notes file from the zip
+            unzip -p "$zip" "$NOTES_FILENAME" > /tmp/patched_notes.md
+            # Replace the title line
+            sed -i "s/^# Compact toolchain .*/# Compact toolchain ${CLEAN_VERSION}/" /tmp/patched_notes.md
+            # Update the file inside the zip
+            zip "$zip" -j /tmp/patched_notes.md
+
+          done
+
+      - name: Patch release notes file for GitHub release body
+        run: |
+          VERSION="${{ inputs.version }}"
+          CLEAN_VERSION="${VERSION#v}"
+          sed -i "s/^# Compact toolchain .*/# Compact toolchain ${CLEAN_VERSION}/" "${{ needs.setup.outputs.release_notes_file }}"
 
       - name: Create Release on midnight-ntwrk/artifacts
         uses: softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe # v2.6.1
