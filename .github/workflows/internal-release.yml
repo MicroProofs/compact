@@ -326,7 +326,7 @@ jobs:
         with:
           name: macos-release-x86_64
 
-      - name: Create Release
+      - name: Create Release on midnight-ntwrk/artifacts
         uses: softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe # v2.6.1
         with:
           repository: midnight-ntwrk/artifacts
@@ -334,6 +334,19 @@ jobs:
           name: Compact toolchain ${{ inputs.version || github.ref_name }}
           draft: false
           prerelease: false
+          files: compactc_${{ needs.setup.outputs.clean_tag }}_*.zip
+          token: ${{ secrets.MIDNIGHTCI_PACKAGES_WRITE }}
+          body_path: ${{ needs.setup.outputs.release_notes_flag == 'true' && needs.setup.outputs.release_notes_file || '' }}
+          body: ${{ needs.setup.outputs.release_notes_flag != 'true' && format('Compactc {0}', inputs.version || github.ref_name) || '' }}
+
+      - name: Create Release on LFDT/Minokawa
+        uses: softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe # v2.6.1
+        with:
+          repository: LFDT-Minokawa/compact
+          tag_name: compactc-${{ inputs.version || github.ref_name }}
+          name: Compact toolchain ${{ inputs.version || github.ref_name }}
+          draft: false
+          prerelease: true
           files: compactc_${{ needs.setup.outputs.clean_tag }}_*.zip
           token: ${{ secrets.MIDNIGHTCI_PACKAGES_WRITE }}
           body_path: ${{ needs.setup.outputs.release_notes_flag == 'true' && needs.setup.outputs.release_notes_file || '' }}

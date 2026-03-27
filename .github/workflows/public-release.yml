@@ -231,12 +231,7 @@ jobs:
           echo "Public assets:"
           ls -la public-assets/
 
-      - name: Create and push tag
-        run: |
-          git tag ${{ needs.setup.outputs.public_version }}
-          git push origin ${{ needs.setup.outputs.public_version }}
-
-      - name: Create public release
+      - name: Create public release -- midnightntwrk/compact
         env:
           GH_TOKEN: ${{ secrets.MIDNIGHTCI_PACKAGES_WRITE }}
         run: |
@@ -251,6 +246,39 @@ jobs:
             --notes-file "${{ needs.setup.outputs.release_notes_file }}" \
             --latest=false \
             public-assets/*
+
+      - name: Create public release -- LFDT-Minokawa/compact
+        env:
+          GH_TOKEN: ${{ secrets.MIDNIGHTCI_PACKAGES_WRITE }}
+        run: |
+          PUBLIC_VERSION="${{ needs.setup.outputs.public_version }}"
+          CLEAN_PUBLIC="${PUBLIC_VERSION#v}"
+          PUBLIC_TAG="compactc-${PUBLIC_VERSION}"
+          LANGUAGE_VERSION="${{ inputs.language_version }}"
+          CLEAN_LANGUAGE="${LANGUAGE_VERSION#v}"
+          gh release create "$PUBLIC_TAG" \
+            --repo LFDT-Minokawa/compact \
+            --title "Compact toolchain ${CLEAN_PUBLIC} (Compact language ${CLEAN_LANGUAGE})" \
+            --notes-file "${{ needs.setup.outputs.release_notes_file }}" \
+            --latest=false \
+            public-assets/*
+
+      - name: Create public release -- midnight-ntwrk/artifacts
+        env:
+          GH_TOKEN: ${{ secrets.MIDNIGHTCI_PACKAGES_WRITE }}
+        run: |
+          PUBLIC_VERSION="${{ needs.setup.outputs.public_version }}"
+          CLEAN_PUBLIC="${PUBLIC_VERSION#v}"
+          PUBLIC_TAG="compactc-${PUBLIC_VERSION}"
+          LANGUAGE_VERSION="${{ inputs.language_version }}"
+          CLEAN_LANGUAGE="${LANGUAGE_VERSION#v}"
+          gh release create "$PUBLIC_TAG" \
+            --repo midnight-ntwrk/artifacts \
+            --title "Compact toolchain ${CLEAN_PUBLIC} (Compact language ${CLEAN_LANGUAGE})" \
+            --notes-file "${{ needs.setup.outputs.release_notes_file }}" \
+            --latest=false \
+            public-assets/*
+
 
   generate-docs-after-release:
     if: ${{ inputs.docs }}
