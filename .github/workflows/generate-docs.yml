@@ -116,7 +116,7 @@ jobs:
           cp -r ../doc/api/runtime/. ./api-reference/compact-runtime
           echo -e "# Compact runtime API\n\n$(cat ../doc/api/runtime/README.md)" > ./api-reference/compact-runtime/README.md
 
-          python3 ../scripts/update-custom.py "../doc/custom.css" "src/css/docs-custom.css"
+          python3 ../scripts/sync-css.py "../doc/custom.css" "src/css/docs-custom.css"
 
           git add .
           git commit -m "Update compact documentation"
