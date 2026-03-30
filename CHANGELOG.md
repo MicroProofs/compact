@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Toolchain 0.30.106, language 0.22.102, runtime 0.15.102]
+
+### Added
+
+- Adds `keccakHash` to the standard library, with the same signature as
+  `persistentHash`.  Adds `keccakHash` to the Compact runtime with the same
+  signature as `persistentHash`.  `keccakHash` requires the experimental feature
+  flag `--feature-zkir-v3` to work in an impure circuit (or called from an
+  impure circuit).  It is a compiler error to use it in an impure circuit using
+  the ZKIR v2 circuit backend.
+
 ## [Toolchain 0.30.105, language 0.22.101, runtime 0.15.101]
 
 ### Added
