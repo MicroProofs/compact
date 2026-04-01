@@ -432,6 +432,8 @@ jobs:
     if: ${{ always() && inputs.docs && github.event_name == 'workflow_dispatch' && needs.make-release.result == 'success' }}
     name: Create branch in midnight-docs with latest documentation
     needs: [ setup, check-docs, make-release ]
+    permissions:
+      contents: read
     uses: ./.github/workflows/generate-docs.yml
     secrets: inherit
     with:
