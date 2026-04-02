@@ -67,8 +67,9 @@ jobs:
     steps:
       - name: Determine branch
         id: set_branch
+        env:
+          BRANCH: ${{ inputs.branch }}
         run: |
-          BRANCH="${{ inputs.branch }}"
           if [ -z "$BRANCH" ]; then
             BRANCH="main"
           fi
@@ -77,10 +78,12 @@ jobs:
 
       - name: Sanitize tag
         id: clean
+        env:
+          RAW_REF: ${{ inputs.version || github.ref_name }}
         run: |
           # Remove slashes in the branch name, otherwise they would be interpreted as subdirectories
           # in the build step
-          export SAFE_REF_NAME="$(echo ${{ inputs.version || github.ref_name }} | sed 's;/;_;g')"
+          SAFE_REF_NAME="$(echo "$RAW_REF" | sed 's;/;_;g')"
           echo "tag=$SAFE_REF_NAME" >> $GITHUB_OUTPUT
 
       - name: Set linux arm name
@@ -101,16 +104,20 @@ jobs:
 
       - name: Compute release notes path
         id: release_notes
+        env:
+          VERSION: ${{ inputs.version }}
         run: |
-          VERSION="${{ inputs.version }}"
           # Extract just the major.minor.patch part (strip leading 'v' and any suffix like -rc.0)
           CLEAN_VERSION=$(echo "$VERSION" | sed 's/^v//' | sed 's/-.*//')
           echo "file=doc/release-notes/toolchain-${CLEAN_VERSION}.md" >> "$GITHUB_OUTPUT"
 
       - name: Set release notes include flag
         id: release_notes_flag
+        env:
+          INCLUDE_NOTES: ${{ inputs.include_release_notes }}
+          EVENT_NAME: ${{ github.event_name }}
         run: |
-          if [ "${{ inputs.include_release_notes }}" = "true" ] && [ "${{ github.event_name }}" != "schedule" ]; then
+          if [ "$INCLUDE_NOTES" = "true" ] && [ "$EVENT_NAME" != "schedule" ]; then
             echo "include=true" >> "$GITHUB_OUTPUT"
           else
             echo "include=false" >> "$GITHUB_OUTPUT"
@@ -118,8 +125,9 @@ jobs:
 
       - name: Check format of internal release
         if: ${{ github.event_name == 'workflow_dispatch' }}
+        env:
+          INTERNAL: ${{ inputs.version }}
         run: |
-          INTERNAL="${{ inputs.version }}"
           if [[ ! "$INTERNAL" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-.+$ ]]; then
             echo "::error::version must match v*.*.*-* format (e.g. v1.2.3-rc.1), got: $INTERNAL"
             exit 1
@@ -141,12 +149,15 @@ jobs:
 
       - name: Verify release notes file exists
         if: ${{ inputs.include_release_notes && github.event_name == 'workflow_dispatch' }}
+        env:
+          RELEASE_NOTES_FILE: ${{ needs.setup.outputs.release_notes_file }}
+          BRANCH: ${{ needs.setup.outputs.branch }}
         run: |
-          if [ ! -f "${{ needs.setup.outputs.release_notes_file }}" ]; then
-            echo "::error::Release notes file '${{ needs.setup.outputs.release_notes_file }}' not found on branch '${{ needs.setup.outputs.branch }}'"
+          if [ ! -f "$RELEASE_NOTES_FILE" ]; then
+            echo "::error::Release notes file '$RELEASE_NOTES_FILE' not found on branch '$BRANCH'"
             exit 1
           fi
-          echo "Release notes file found: ${{ needs.setup.outputs.release_notes_file }}"
+          echo "Release notes file found: $RELEASE_NOTES_FILE"
 
   check-docs:
     name: Check if documentation is updated
@@ -297,15 +308,20 @@ jobs:
     needs: [ setup, test-arm-linux, test-intel-linux, test-arm-macos, test-intel-macos ]
     steps:
       - name: Verify required builds passed
+        env:
+          RESULT_ARM_LINUX: ${{ needs.test-arm-linux.result }}
+          RESULT_INTEL_LINUX: ${{ needs.test-intel-linux.result }}
+          RESULT_ARM_MACOS: ${{ needs.test-arm-macos.result }}
+          RESULT_INTEL_MACOS: ${{ needs.test-intel-macos.result }}
         run: |
-          if [ "${{ needs.test-arm-linux.result }}" != "success" ] || \
-             [ "${{ needs.test-intel-linux.result }}" != "success" ] || \
-             [ "${{ needs.test-arm-macos.result }}" != "success" ]; then
+          if [ "$RESULT_ARM_LINUX" != "success" ] || \
+             [ "$RESULT_INTEL_LINUX" != "success" ] || \
+             [ "$RESULT_ARM_MACOS" != "success" ]; then
             echo "::error::One or more required builds/tests failed."
             exit 1
           fi
-          if [ "${{ needs.test-intel-macos.result }}" != "success" ] && \
-             [ "${{ needs.test-intel-macos.result }}" != "skipped" ]; then
+          if [ "$RESULT_INTEL_MACOS" != "success" ] && \
+             [ "$RESULT_INTEL_MACOS" != "skipped" ]; then
             echo "::error::Intel macOS build/test failed."
             exit 1
           fi
@@ -317,9 +333,11 @@ jobs:
           ref: ${{ needs.setup.outputs.branch }}
 
       - name: Create and push tag
+        env:
+          VERSION: ${{ inputs.version }}
         run: |
-          git tag ${{ inputs.version }}
-          git push origin ${{ inputs.version }}
+          git tag "$VERSION"
+          git push origin "$VERSION"
 
       - name: Fetch release assets - Linux aarch64 (Arm)
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
@@ -343,13 +361,16 @@ jobs:
           name: macos-release-x86_64
 
       - name: Patch release notes in zip artifacts
+        env:
+          VERSION: ${{ inputs.version }}
+          CLEAN_TAG: ${{ needs.setup.outputs.clean_tag }}
+          RELEASE_NOTES_FILE: ${{ needs.setup.outputs.release_notes_file }}
         run: |
-          VERSION="${{ inputs.version }}"
           CLEAN_VERSION="${VERSION#v}"
-          NOTES_FILENAME=$(basename "${{ needs.setup.outputs.release_notes_file }}")
+          NOTES_FILENAME=$(basename "$RELEASE_NOTES_FILE")
           TARGET_FILENAME="toolchain-${CLEAN_VERSION}.md"
 
-          for zip in compactc_${{ needs.setup.outputs.clean_tag }}_*.zip; do
+          for zip in compactc_"${CLEAN_TAG}"_*.zip; do
             echo "Patching $zip..."
 
             # Find the full path of the release notes file inside the zip
@@ -388,10 +409,12 @@ jobs:
           done
 
       - name: Patch release notes file for GitHub release body
+        env:
+          VERSION: ${{ inputs.version }}
+          RELEASE_NOTES_FILE: ${{ needs.setup.outputs.release_notes_file }}
         run: |
-          VERSION="${{ inputs.version }}"
           CLEAN_VERSION="${VERSION#v}"
-          sed -i "s/^# Compact toolchain .*/# Compact toolchain ${CLEAN_VERSION}/" "${{ needs.setup.outputs.release_notes_file }}"
+          sed -i "s/^# Compact toolchain .*/# Compact toolchain ${CLEAN_VERSION}/" "$RELEASE_NOTES_FILE"
 
       - name: Create Release on midnight-ntwrk/artifacts
         uses: softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe # v2.6.1
@@ -423,10 +446,11 @@ jobs:
       - name: Publish release on LFDT-Minokawa/compact
         env:
           GH_TOKEN: ${{ secrets.MIDNIGHTCI_REPO }}
+          RELEASE_ID: ${{ steps.create_release_lfdt.outputs.id }}
         run: |
           gh api \
             --method PATCH \
-            /repos/LFDT-Minokawa/compact/releases/${{ steps.create_release_lfdt.outputs.id }} \
+            /repos/LFDT-Minokawa/compact/releases/${RELEASE_ID} \
             -f draft=false
 
   generate-docs-after-release:
