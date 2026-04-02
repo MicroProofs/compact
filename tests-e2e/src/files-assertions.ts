@@ -106,6 +106,7 @@ export class AssertGeneratedFiles {
                     'no-unused-vars': 'warn',
                     eqeqeq: 'warn',
                     'no-var': 'warn',
+                    'no-constant-condition': 'warn',
                 },
             },
         });
