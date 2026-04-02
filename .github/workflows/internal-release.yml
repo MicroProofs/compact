@@ -1,4 +1,5 @@
-name: Build, test and internal release compact toolchain
+# NB: if this name changes, it must also be changed in notify-failed-scheduled
+name: Internal release of compact toolchain
 
 on:
   workflow_dispatch:
@@ -406,6 +407,7 @@ jobs:
           body: ${{ needs.setup.outputs.release_notes_flag != 'true' && format('Compactc {0}', inputs.version || github.ref_name) || '' }}
 
       - name: Create Release on LFDT/Minokawa
+        id: create_release_lfdt
         uses: softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe # v2.6.1
         with:
           repository: LFDT-Minokawa/compact
