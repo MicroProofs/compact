@@ -90,6 +90,6 @@ jobs:
       - name: Check CSS sync blocks are in sync
         run: |
           python3 scripts/sync-css.py \
-            "doc/custom.css" \
+            "doc/custom-code.css" \
             "midnight-docs/src/css/custom.css" \
             --check

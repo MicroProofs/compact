@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Syncs marked blocks from compiler-custom.css into docs-custom.css.
+# Syncs marked blocks from doc/custom-code.css into midnight-docs/src/css/custom.css.
 #
 # Each sync block is delimited by:
 #   /* BEGIN_COMPACT_SYNC: <tag> */ ... /* END_COMPACT_SYNC: <tag> */
@@ -133,7 +133,7 @@ if __name__ == "__main__":
     check_only = "--check" in flags
 
     if len(args) != 2:
-        print(f"Usage: {sys.argv[0]} <compiler-custom.css> <docs-custom.css> [--check]", file=sys.stderr)
+        print(f"Usage: {sys.argv[0]} <compiler-custom-file.css> <docs-custom-file.css> [--check]", file=sys.stderr)
         sys.exit(1)
 
     compiler_path = Path(args[0])
