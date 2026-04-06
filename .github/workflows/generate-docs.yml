@@ -94,12 +94,17 @@ jobs:
           ref: ${{ inputs.docs_branch }}
 
       - name: Manual Git Push
+        env:
+          MIDNIGHTCI_REPO: ${{ secrets.MIDNIGHTCI_REPO }}
+          RUN_ID: ${{ github.run_id }}
         run: |
           cd midnight-docs
           git config user.name "midnight-ci"
           git config user.email "ci@midnight.network"
+          git remote set-url origin "https://x-access-token:${MIDNIGHTCI_REPO}@github.com/midnightntwrk/midnight-docs.git"
 
-          git checkout -b compact-docs-update-${{ github.run_id }}
+
+          git checkout -b "compact-docs-update-${RUN_ID}"
 
           cp ../doc/ledger-adt.mdx docs/compact/data-types/ledger-adt.mdx
           cp ../doc/ledger-adt.mdx docs/compact/reference/ledger-adt.mdx
@@ -130,15 +135,19 @@ jobs:
       - name: Create PR
         env:
           GH_TOKEN: ${{ secrets.MIDNIGHTCI_REPO }}
+          DRAFT_PR: ${{ inputs.draft_pr }}
+          DOCS_BRANCH: ${{ inputs.docs_branch }}
+          RUN_ID: ${{ github.run_id }}
+          PR_DESCRIPTION: ${{ inputs.pr_description }}
         run: |
           DRAFT_FLAG=""
-          if [ "${{ inputs.draft_pr }}" = "true" ]; then
+          if [ "$DRAFT_PR" = "true" ]; then
             DRAFT_FLAG="--draft"
           fi
           gh pr create \
             --repo midnightntwrk/midnight-docs \
-            --base ${{ inputs.docs_branch }} \
-            --head "compact-docs-update-${{ github.run_id }}" \
-            --title "${{ inputs.pr_description }}" \
-            --body 'PR: ${{ inputs.pr_description }}' \
+            --base "$DOCS_BRANCH" \
+            --head "compact-docs-update-${RUN_ID}" \
+            --title "$PR_DESCRIPTION" \
+            --body "PR: $PR_DESCRIPTION" \
             $DRAFT_FLAG
