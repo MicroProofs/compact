@@ -18096,6 +18096,20 @@ groups than for single tests.
     (succeeds)
     )
 
+  (test ; jubjubScalarFromNative can be used in a circuit
+    '(
+      "import CompactStandardLibrary;"
+      ""
+      "ledger impure: Boolean;"
+      ""
+      "export circuit test(): JubjubPoint {"
+      "  impure = true;"
+      "  return ecMulGenerator(jubjubScalarFromNative(0));"
+      "}"
+      )
+    (succeeds)
+    )
+
   (test ; jubjubSchnorrVerify with wrong argument type should fail
     '(
       "import CompactStandardLibrary;"
