@@ -163,7 +163,10 @@ One circuit signature *S* is a **subtype** of another *T* when
 2. The return type of *S* is a subtype of the return type of *T*.
 3. The type of each parameter of *T* is a subtype of the corresponding
    parameter of *S*.  That is, for signature *S* to be a subtype of
-   signature *T*, its *S*'s parameter must be supertypes of *T*'s.
+   signature *T*, *S*'s parameter types must be supertypes of *T*'s.
+
+(Formally, circuit signature subtyping is contravariant on parameter
+types and covariant on return types.)
    
 A contract **implements** an interface when, for every circuit
 declared in the interface, the contract exports a circuit with the
