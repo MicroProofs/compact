@@ -38,7 +38,7 @@ In order to support the creation of multiple smart contracts that work
 together as a system, along with decentralized applications that use
 them, three major new features are added to Compact:
 1. contract interface types
-2. contract references in circuit parameters and ledger state fields
+2. references to contracts as values
 3. calls within a circuit to another contract's circuits
 
 This set of changes is intended as the first in a sequence of
@@ -58,13 +58,13 @@ Midnight provides the Compact language for defining contracts, and it
 uses zero-knowledge proofs to enable parts of a contract's execution
 to remain undisclosed.
 
-At the launch of Midnight's mainnet, it was already possible to write
-smart contracts in Compact and to create one or more decentralized
-applications (DApps) for any contract.  It was not possible, however,
-to create *multiple contracts that work together as a system*, with
-contracts holding references to other contracts in their ledger state
-and with circuits in one contract calling the circuits of other
-contracts.
+Prior to the improvements described in this proposal, it was already
+possible to write smart contracts for Midnight in Compact and to
+create one or more decentralized applications (DApps) for any
+contract.  It was not possible, however, to create *multiple contracts
+that work together as a system*, with contracts holding references to
+other contracts in their ledger state and with circuits in one
+contract calling the circuits of other contracts.
 
 This proposal describes new functionality to be added to Compact,
 enabling such multi-contract systems.  The main new features are:
@@ -90,11 +90,12 @@ describes only the first step in that direction.
 Specifically, two major limitations are incorporated into this first
 proposal for multi-contract system support:
 
-1. An interface named `T` can be implemented only by a contract
-   defined in the file `T.compact`.  That is, the code for a contract
-   that implements interface `T` may be dynamically loaded, but it
-   will be found by assuming that the code for concrete contract `T`
-   is already made available by the DApp.
+1. When a contract holds a reference to another contract of interface
+   type `T` and calls one of its circuits, the implementation of the
+   circuit is found by assuming that it was produced by compiling
+   `T.compact` and that it is available in the same application
+   context as the caller.  (This limitation is described more
+   precisely in the following section.)
 2. Contracts to be called by other contracts must not define witness
    functions.  That is, cross-contract calls can be made only to
    contracts with no private state.
@@ -131,7 +132,8 @@ keyword `interface` in place of `contract`.  For clarity in the
 grammar, the production's nonterminal should be renamed from
 _contract-declaration_ to _interface-declaration_, and the identifier
 for the interface should be renamed from _contract-name_ to
-_interface-name_.  Also, _interface-name_ should be added as an alias
+_interface-name_.  Also, _interface-name_ should be added as one of
+the meta-variables for _identifier_.
 
 Thus, the production _interface-declaration_ looks like
 
@@ -139,19 +141,58 @@ Thus, the production _interface-declaration_ looks like
 
 and likewise for the comma-separated version.  Note that
 _circuit-declaration_ is defined to require a "simple" parameter
-list.  The circuits in contract interfaces must not have generic
-parameters.
+list, because the circuits in contract interfaces are not allowed to 
+have generic parameters.
 
-Any contract whose set of exported circuits is a superset of the
-circuits declared in an interface is said to **implement** that
-interface.  For example, any contract that exports `setAddAmount` and
-`addTo` methods with the signatures above implements the `Adder`
-interface.  This is true regardless of whether the contract declares
-any intention to implement the interface.  In other words, interface
-implementation is structural, not nominal.
+When some subset of a contract's circuits matches those declared in
+some interface, the contract is said to **implement** that interface.
+
+More precisely, define the **signature** of a circuit to be the types
+of its parameters, plus its return type.  Changing the parameter names
+or using destructuring patterns in a circuit definition does not
+change its signature, because the signature is defined only by the
+parameter and return *types*.  The circuit declarations in an
+interface also have signatures defined by their types.  For example,
+the signature of `addTo` in the `Adder` interface above is
+```
+  Uint<64> -> Uint<64>
+```
+
+One circuit signature *S* is a **subtype** of another *T* when
+1. *S* and *T* have the same number of parameter types.
+2. The return type of *S* is a subtype of the return type of *T*.
+3. The type of each parameter of *T* is a subtype of the corresponding
+   parameter of *S*.  That is, for signature *S* to be a subtype of
+   signature *T*, its *S*'s parameter must be supertypes of *T*'s.
+   
+A contract **implements** an interface when, for every circuit
+declared in the interface, the contract exports a circuit with the
+same name and with a signature that is a subtype of the one in the
+interface.
+
+For example, any contract that exports `setAddAmount` and `addTo`
+circuits with signatures identical to those declared above in the
+`Adder` interface implements the `Adder` interface.  A contract
+that exports circuits like these
+
+```compact
+export circuit setAddAmount(n: Uint<128>): [] {
+  ...
+}
+
+export circuit addTo(n: Uint<128>): Uint<32> {
+  ...
+}
+```
+
+also implements the `Adder` interface.
+
+This is true regardless of whether the contract declares any intention
+to implement the interface.  In other words, interface implementation
+is structural, not nominal.
 
 On the other hand, when a contract is intended to implement some
-interface, it is useful to assert that expectation.  This is
+interface, it is useful to assert that intention.  This is
 accomplished with a new program element to assert that the current
 contract implements a specific interface.  Here is an example.
 
@@ -159,8 +200,10 @@ contract implements a specific interface.  Here is an example.
 contract implements Adder;
 ```
 
-This declaration applies to the contract being defined in the current
-scope.  A contract may be declared to implement several different
+The name of the interface must be in scope, using Compact's existing
+rules for the scope of program-defined types.  The `implements`
+declaration applies to the contract being defined at the point where
+it appears.  A contract may be declared to implement several different
 interfaces by including multiple `contract implements` declarations.
 
 The addition of the `contract implements` form requires a new
