@@ -33630,29 +33630,6 @@ groups than for single tests.
        '(
          "import CompactStandardLibrary;"
          "ledger Q: Bytes<32>;"
-         "export circuit bar(): Bytes<32> { return Q; }"
-         ))
-     (succeeds))
-    ((create-file "testfile.compact"
-       '(
-         "import CompactStandardLibrary;"
-         "contract C {"
-         "  circuit bar(): Bytes<64>;"
-         "}"
-         "ledger contract_c: C;"
-         "constructor (c: C) { contract_c = disclose(c); }"
-         "export circuit hello(): Bytes<64> { return contract_c.read().bar(); }"
-         ))
-     (oops
-       message: "~a:\n  ~?"
-       irritants: '("testfile.compact line 3 char 3" "contract declaration claims the return type of circuit ~s is ~a, but in the actual contract definition it is ~a" (bar "Bytes<64>" "Bytes<32>")))
-     ))
-
-  (test-group
-    ((create-file "C.compact"
-       '(
-         "import CompactStandardLibrary;"
-         "ledger Q: Bytes<32>;"
          "export circuit foo(x: Bytes<32>): [] { return; }"
          "export circuit bar(): Bytes<32> { return Q; }"
          "constructor(q: Bytes<32>) { Q = disclose(q); }"
@@ -33745,27 +33722,6 @@ groups than for single tests.
       (returns
         (program
           (public-ledger-declaration () (constructor () (tuple)))))
-    ))
-
-  (test-group
-    ((create-file "C.compact"
-       '(
-         "circuit foo(x: Field): Boolean {"
-         "  return x == 3;"
-         "}"))
-      (succeeds))
-    ((create-file "testfile.compact"
-       `(
-         "module M {"
-         "  export contract C {"
-         "    circuit foo(x: Field): Boolean;"
-         "  }"
-         "}"
-         "import M;"
-         ))
-     (oops
-       message: "~a:\n  ~?"
-       irritants: '("testfile.compact line 3 char 5" "contract declaration has a circuit named ~s, but it is not present in the actual contract definition" (foo)))
     ))
 
   (test-group
@@ -34116,89 +34072,6 @@ groups than for single tests.
       ))
 
   (test-group
-    ((create-file "C.compact"
-       '(
-         "export circuit foo(x: Field, y: Field): [] { return; }"
-         "export circuit bar(): Field { return 3; }"
-         ))
-     (succeeds))
-    ((create-file "testfile.compact"
-       '(
-         "module m{"
-         "  export contract C {"
-         "    circuit foo(x: Field): [];"
-         "    pure circuit bar(): Field;"
-         "}}"
-         "contract C {"
-         "  circuit foo(x: Field, y: Field): [];"
-         "  pure circuit bar(): Field;"
-         "}"
-         "import m prefix $;"
-         "constructor($c: $C) {"
-         "  const c : C = $c;"
-         "}"
-         ))
-     (oops
-       message: "~a:\n  ~?"
-       irritants: '("testfile.compact line 3 char 5" "contract declaration claims circuit ~s has ~s argument~:*~p, but in the actual contract definition it has ~s" (foo 1 2)))
-     ))
-
-  (test-group
-    ((create-file "C.compact"
-       '(
-         "export circuit foo(x: Field, y: Field): [] { return; }"
-         "export circuit bar(): Field { return 3; }"
-         ))
-     (succeeds))
-    ((create-file "testfile.compact"
-       '(
-         "module m{"
-         "  export contract C {"
-         "    circuit foo(x: Field, y: Field): [];"
-         "    pure circuit bar(): Field;"
-         "}}"
-         "contract C {"
-         "  circuit foo(x: Field): [];"
-         "  pure circuit bar(): Field;"
-         "}"
-         "import m prefix $;"
-         "constructor($c: $C) {"
-         "  const c : C = $c;"
-         "}"
-         ))
-     (oops
-       message: "~a:\n  ~?"
-       irritants: '("testfile.compact line 7 char 3" "contract declaration claims circuit ~s has ~s argument~:*~p, but in the actual contract definition it has ~s" (foo 1 2)))
-     ))
-
-  (test-group
-    ((create-file "C.compact"
-       '(
-         "export circuit foo(x: Uint<16>): Uint<8> { return x as Uint<8>; }"
-         "export circuit bar(): Field { return 3; }"
-         ))
-     (succeeds))
-    ((create-file "testfile.compact"
-       '(
-         "module m{"
-         "  export contract C {"
-         "    circuit foo(x: Uint<16>): Uint<8>;"
-         "    pure circuit bar(): Field;"
-         "}}"
-         "contract C {"
-         "  circuit foo(x: Uint<8>): Uint<16>;"
-         "}"
-         "import m prefix $;"
-         "constructor($c: $C) {"
-         "  const c : C = $c;"
-         "}"
-         ))
-     (oops
-       message: "~a:\n  ~?"
-       irritants: '("testfile.compact line 7 char 3" "contract declaration claims the type of circuit ~s argument ~s is ~a, but in the actual contract definition it is ~a" (foo 1 "Uint<8>" "Uint<16>")))
-     ))
-
-  (test-group
     ((create-file "C1.compact"
        '(
          "export circuit foo(x: Field): [] { return; }"
@@ -34236,73 +34109,6 @@ groups than for single tests.
      (succeeds))
     ((create-file "testfile.compact"
        '(
-         "import CompactStandardLibrary;"
-         "contract C {"
-         "  circuit foo(x: Field): [];"
-         "  pure circuit bar(): Field;"
-         "}"
-         "ledger contract_c: C;"
-         "witness check(): C;"
-         "export circuit hello() : C {return check();}"
-         ))
-     (oops
-       message: "~a:\n  ~?"
-       irritants: '("testfile.compact line 3 char 3" "contract declaration claims circuit ~s has ~s argument~:*~p, but in the actual contract definition it has ~s" (foo 1 0)))))
-
-  (test-group
-    ((create-file "C.compact"
-       '(
-         "export circuit foo(): [] { return; }"
-         "export circuit bar(): Field { return 3; }"
-         ))
-     (succeeds))
-    ((create-file "testfile.compact"
-       '(
-         "import CompactStandardLibrary;"
-         "contract C {"
-         "  circuit foo(x: Field): [];"
-         "  pure circuit bar(): Field;"
-         "}"
-         "ledger contract_c: C;"
-         "witness check(): Vector<3, C>;"
-         "export circuit hello() : C {return check()[1];}"
-         ))
-     (oops
-       message: "~a:\n  ~?"
-       irritants: '("testfile.compact line 3 char 3" "contract declaration claims circuit ~s has ~s argument~:*~p, but in the actual contract definition it has ~s" (foo 1 0)))))
-
-  (test-group
-    ((create-file "C.compact"
-       '(
-         "export circuit foo(): [] { return; }"
-         "export circuit bar(): Field { return 3; }"
-         ))
-     (succeeds))
-    ((create-file "testfile.compact"
-       '(
-         "import CompactStandardLibrary;"
-         "struct S { c: C }"
-         "contract C {"
-         "  circuit foo(x: Field): [];"
-         "  pure circuit bar(): Field;"
-         "}"
-         "ledger contract_c: C;"
-         "witness check(): S;"
-         "export circuit hello() : S {return check();}"
-         ))
-     (oops
-       message: "~a:\n  ~?"
-       irritants: '("testfile.compact line 4 char 3" "contract declaration claims circuit ~s has ~s argument~:*~p, but in the actual contract definition it has ~s" (foo 1 0)))))
-
-  (test-group
-    ((create-file "C.compact"
-       '(
-         "export circuit foo(): [] { return; }"
-         "export circuit bar(): Field { return 3; }"
-         ))
-     (succeeds))
-    ((create-file "testfile.compact"
-       '(
          "struct S { c: C }"
          "contract C {"
          "  circuit foo(): [];"
@@ -34328,28 +34134,6 @@ groups than for single tests.
          (circuit %hello.4 ()
               (ttuple)
            (call %check.2 (public-ledger %contract_c.1 (0) read)))))
-     ))
-
-  (test-group
-    ((create-file "C.compact"
-       '(
-         "export circuit foo(): [] { return; }"
-         "export circuit bar(): Field { return 3; }"
-         ))
-     (succeeds))
-    ((create-file "testfile.compact"
-       '(
-         "import CompactStandardLibrary;"
-         "contract C {"
-         "  circuit foo(x: Field): [];"
-         "  pure circuit bar(): Field;"
-         "}"
-         "ledger contract_c: C;"
-         "constructor(){contract_c = default<C>;}"
-         ))
-     (oops
-       message: "~a:\n  ~?"
-       irritants: '("testfile.compact line 3 char 3" "contract declaration claims circuit ~s has ~s argument~:*~p, but in the actual contract definition it has ~s" (foo 1 0)))
      ))
 
   (test
@@ -34935,31 +34719,6 @@ groups than for single tests.
      (oops
        message: "~a:\n  ~?"
        irritants: '("testfile.compact line 9 char 1" "circuit ~a is marked pure but is actually impure because it calls (directly or indirectly) impure circuit ~a;\n    ~:*~a is impure because it ~a at ~a" (W Z "calls impure circuit foo of external contract C" "line 12 char 34")))
-     ))
-
-  (test-group
-    ((create-file "C.compact"
-       '(
-         "import CompactStandardLibrary;"
-         "ledger X: Bytes<32>;"
-         "export circuit foo(x: Bytes<32>): [] { X = disclose(x); }"
-         "export circuit bar(): Bytes<32> { return X; }"
-         ))
-     (succeeds))
-    ((create-file "testfile.compact"
-       '(
-         "import CompactStandardLibrary;"
-         "contract C {"
-         "  circuit foo(x: Bytes<32>): [];"
-         "  pure circuit bar(): Bytes<32>;"
-         "}"
-         "ledger contract_c: C;"
-         "constructor (c: C) { contract_c = disclose(c); }"
-         "export pure circuit hello(): [] { return contract_c.foo(contract_c.read().bar()); }"
-         ))
-     (oops
-       message: "~a:\n  ~?"
-       irritants: '("testfile.compact line 4 char 3" "contract declaration claims circuit ~s is pure, but it is not in the actual contract definition" (bar)))
      ))
 
   (test-group
@@ -35698,86 +35457,6 @@ groups than for single tests.
              (tuple)))))
       ))
 
-  ;; cyclic external contract calls.
-  (test-group ;; if the test-group doesn't care about the order this will not throw an error
-    ((create-file "C1.compact"
-       '(
-         "import CompactStandardLibrary;"
-         "contract C2{"
-         "  circuit foo2(): [];"
-         "  pure circuit bar2(): Field;"
-         "}"
-         "sealed ledger contract_c: C2;"
-         "constructor(c2:C2) {contract_c = disclose(c2);}"
-         "export circuit foo(): [] { return contract_c.foo2(); }"
-         "export circuit bar(): Field { return contract_c.bar2(); }"
-         ))
-     (oops
-       message: "~a:\n  ~?"
-       irritants: '("C1.compact line 2 char 1" "error opening ~a; try (re)compiling ~a" ("compiler/testdir/C2/compiler/contract-info.json" "compiler/testdir/C2.compact"))))
-    ((create-file "C2.compact"
-       '(
-         "export circuit foo2(): [] { return; }"
-         "export pure circuit bar2(): Field { return 2;}"
-         ))
-      (succeeds))
-    ((create-file "testfile.compact"
-       '(
-         "import CompactStandardLibrary;"
-         "contract C1 {"
-         "  circuit foo(): [];"
-         "  circuit bar(): Field;"
-         "}"
-         "ledger contract_c: C1;"
-         "constructor(c1: C1) {contract_c = disclose(c1);}"
-         "export circuit foofoo(): [] {const x = contract_c.foo(); return;}"
-         ))
-     (oops
-       message: "~a:\n  ~?"
-       irritants: '("testfile.compact line 2 char 1" "error opening ~a; try (re)compiling ~a" ("compiler/testdir/C1/compiler/contract-info.json" "compiler/testdir/C1.compact")))
-     ))
-
-  (test-group
-    ((create-file "C1.compact"
-       '(
-         "export circuit foo(): [] { return; }"
-         ))
-     (custom-check
-       (lambda (pass-name x)
-         (chmod "compiler/testdir/C1/compiler/contract-info.json" 000)
-         #t))
-      )
-    ((create-file "testfile.compact"
-       '(
-         "contract C1 { circuit foo(): []; }"
-         ))
-     (oops
-       message: "~a:\n  ~?"
-       irritants: '("testfile.compact line 1 char 1" "error opening ~a; try (re)compiling ~a" ("compiler/testdir/C1/compiler/contract-info.json" "compiler/testdir/C1.compact")))
-     ))
-
-  (test-group
-    ((create-file "C1.compact"
-       '(
-         "export circuit foo(): [] { return; }"
-         ))
-     (custom-check
-       (lambda (pass-name x)
-         (let ([fn (format "~a/C1/compiler/contract-info.json" testdir)])
-           (delete-file fn)
-           (call-with-output-file fn
-             (lambda (out-port)
-               (display "jibber jabber" out-port))))))
-      )
-    ((create-file "testfile.compact"
-       '(
-         "contract C1 { circuit foo(): []; }"
-         ))
-     (oops
-       message: "~a:\n  ~?"
-       irritants: '("testfile.compact line 1 char 1" "error reading ~a: ~a" ("compiler/testdir/C1/compiler/contract-info.json" "Exception: contract-info.json line 1 char 1:\n  expected object or array (received jibber)")))
-     ))
-
   (test-group
     ((create-file "C2.compact"
        '(
@@ -36233,65 +35912,6 @@ groups than for single tests.
        irritants: '("testfile.compact line 11 char 1" "constructor cannot call external contracts but calls (directly or indirectly) ~a, which ~a at ~a" (foofoo "calls circuit foo from external contract C1" "line 12 char 50")))
      ))
 
-  (test
-    '(
-      "import CompactStandardLibrary;"
-      "contract C { circuit foo(): []; }"
-      )
-    (oops
-      message: "~a:\n  ~?"
-      irritants: '("testfile.compact line 2 char 1" "error opening ~a; try (re)compiling ~a" ("compiler/C/compiler/contract-info.json" "compiler/testdir/C.compact")))
-    )
-
-  (test-group
-    ((create-file "C1.compact"
-       '(
-         "export circuit foo(): [] { return; }"
-         ))
-     (custom-check
-       (lambda (pass-name x)
-         (let ([t (file-modification-time (format "~a/C1/compiler/contract-info.json" testdir))])
-           (let ([sourcefn (format "~a/C1.compact" testdir)])
-             (let loop ()
-               (unless (time>? (file-modification-time sourcefn) t)
-                 (sleep (make-time 'time-duration (expt 10 8) 1))
-                 (let ([s (call-with-port (open-input-file sourcefn) get-string-all)])
-                   (call-with-port
-                     (open-output-file sourcefn 'replace)
-                     (lambda (op) (put-string op s))))
-                 (loop)))))
-         #t)))
-    ((create-file "testfile.compact"
-       '(
-         "contract C1 { circuit foo(): []; }"
-         ))
-     (oops
-       message: "~a:\n  ~?"
-       irritants: '("testfile.compact line 1 char 1" "~a has been modified more recently than ~a; try recompiling ~a" ("compiler/testdir/C1.compact" "compiler/testdir/C1/compiler/contract-info.json" "compiler/testdir/C1.compact")))
-     ))
-
-  (test-group
-    ; this test is reliant on what the first line of contract-info is and how it is read by compactc
-    ((create-file "C1.compact"
-       '(
-         "export circuit foo(): [] { return; }"
-         ))
-     (custom-check
-       (lambda (pass-name x)
-         (with-output-to-file
-           (format "~a/C1/compiler/contract-info.json" testdir)
-           newline
-           'replace)
-         #t)))
-    ((create-file "testfile.compact"
-       '(
-         "contract C1 { circuit foo(): []; }"
-         ))
-     (oops
-       message: "malformed contract-info file ~a for ~s: ~a; try recompiling ~a"
-       irritants: '("compiler/testdir/C1/compiler/contract-info.json" C1 "missing association for \"contracts\"" C1))
-     ))
-
   (test-group
     ((create-file "C.compact"
       '(
@@ -36330,217 +35950,6 @@ groups than for single tests.
        (program
          (public-ledger-declaration () (constructor () (tuple)))))
       ))
-
-  (test-group
-    ((create-file "C1.compact"
-       '(
-         "export enum E { F }"
-         "export circuit foo(x: E): E { return x; }"
-         ))
-     (custom-check
-       (lambda (pass-name x)
-         (let ([fn (format "~a/C1/compiler/contract-info.json" testdir)])
-           (replace-value-in-json fn '("circuits" "arguments" "type" "elements") (list->vector '()))))))
-    ((create-file "testfile.compact"
-       '(
-         "enum E { F }"
-         "contract C1 { circuit foo(x: E): E; }"
-         ))
-      (oops
-       message: "malformed contract-info file ~a for ~s: ~a; try recompiling ~a"
-       irritants: '("compiler/testdir/C1/compiler/contract-info.json" C1 "enum E does not have any members" C1))
-     ))
-
-  (test-group
-    ((create-file "C1.compact"
-       '(
-         "export enum E { F }"
-         "export circuit foo(x: E): E { return x; }"
-         ))
-     (custom-check
-       (lambda (pass-name x)
-         (let ([fn (format "~a/C1/compiler/contract-info.json" testdir)])
-           (replace-value-in-json fn '("circuits" "arguments" "type" "elements") (list->vector '(16)))))))
-    ((create-file "testfile.compact"
-       '(
-         "enum E { F }"
-         "contract C1 { circuit foo(x: E): E; }"
-         ))
-      (oops
-       message: "malformed contract-info file ~a for ~s: ~a; try recompiling ~a"
-       irritants: '("compiler/testdir/C1/compiler/contract-info.json" C1 "expected a string, got 16" C1))
-     ))
-
-  (test-group
-    ((create-file "C1.compact"
-       '(
-         "export enum E { F }"
-         "export circuit foo(x: E): E { return x; }"
-         ))
-     (custom-check
-       (lambda (pass-name x)
-         (let ([fn (format "~a/C1/compiler/contract-info.json" testdir)])
-           (replace-value-in-json fn '("circuits" "arguments" "type" "elements") 16)))))
-    ((create-file "testfile.compact"
-       '(
-         "enum E { F }"
-         "contract C1 { circuit foo(x: E): E; }"
-         ))
-      (oops
-       message: "malformed contract-info file ~a for ~s: ~a; try recompiling ~a"
-       irritants: '("compiler/testdir/C1/compiler/contract-info.json" C1 "expected a vector, got 16" C1))
-     ))
-
-  (test-group
-    ((create-file "C1.compact"
-       '(
-         "export enum E { F }"
-         "export circuit foo(x: E): E { return x; }"
-         ))
-     (custom-check
-       (lambda (pass-name x)
-         (let ([fn (format "~a/C1/compiler/contract-info.json" testdir)])
-             (replace-value-in-json fn '("circuits" "pure") 16)))))
-    ((create-file "testfile.compact"
-       '(
-         "enum E { F }"
-         "contract C1 { circuit foo(x: E): E; }"
-         ))
-      (oops
-       message: "malformed contract-info file ~a for ~s: ~a; try recompiling ~a"
-       irritants: '("compiler/testdir/C1/compiler/contract-info.json" C1 "expected a boolean, got 16" C1))
-     ))
-
-  (test-group
-    ((create-file "C1.compact"
-       '(
-         "export enum E { F }"
-         "export circuit foo(x: E): E { return x; }"
-         ))
-     (custom-check
-       (lambda (pass-name x)
-         (let ([fn (format "~a/C1/compiler/contract-info.json" testdir)])
-           (replace-value-in-json fn '("circuits") '())))))
-    ((create-file "testfile.compact"
-       '(
-         "enum E { F }"
-         "contract C1 { circuit foo(x: E): E; }"
-         ))
-     (oops
-       message: "malformed contract-info file ~a for ~s: ~a; try recompiling ~a"
-       irritants: '("compiler/testdir/C1/compiler/contract-info.json" C1 "\"circuits\" is not associated with a vector" C1))
-     ))
-
-  (test-group
-    ((create-file "C1.compact"
-       '(
-         "export enum E { F }"
-         "export circuit foo(x: E): E { return x; }"
-         ))
-     (custom-check
-       (lambda (pass-name x)
-         (let ([fn (format "~a/C1/compiler/contract-info.json" testdir)])
-           (replace-value-in-json fn '("circuits" "result-type" "type-name") "Enu")))))
-    ((create-file "testfile.compact"
-       '(
-         "enum E { F }"
-         "contract C1 { circuit foo(x: E): E; }"
-         ))
-      (oops
-       message: "malformed contract-info file ~a for ~s: ~a; try recompiling ~a"
-       irritants: '("compiler/testdir/C1/compiler/contract-info.json" C1 "unrecognized type-name Enu" C1))
-     ))
-
-   (test-group
-    ((create-file "C1.compact"
-       '(
-         "export circuit foo(x: Vector<2, Uint<16>>): Vector<2, Uint<16>> { return x; }"
-         ))
-     (custom-check
-       (lambda (pass-name x)
-         (let ([fn (format "~a/C1/compiler/contract-info.json" testdir)])
-           (replace-value-in-json fn '("circuits" "arguments" "type" "length") #t)))))
-    ((create-file "testfile.compact"
-       '(
-         "contract C1 { circuit foo(x: Uint<16>): Uint<16>; }"
-         ))
-      (oops
-       message: "malformed contract-info file ~a for ~s: ~a; try recompiling ~a"
-       irritants: '("compiler/testdir/C1/compiler/contract-info.json" C1 "expected nat, got #t" C1))
-     ))
-
-  (test-group
-    ((create-file "C1.compact"
-       '(
-         "export circuit foo(x: Uint<16>): Uint<16> { return x; }"
-         ))
-     (custom-check
-       (lambda (pass-name x)
-         (let ([fn (format "~a/C1/compiler/contract-info.json" testdir)])
-           (replace-value-in-json fn '("circuits" "arguments" "type" "maxval") #t)))))
-    ((create-file "testfile.compact"
-       '(
-         "contract C1 { circuit foo(x: Uint<16>): Uint<16>; }"
-         ))
-      (oops
-       message: "malformed contract-info file ~a for ~s: ~a; try recompiling ~a"
-       irritants: '("compiler/testdir/C1/compiler/contract-info.json" C1 "expected nat, got #t" C1))
-     ))
-
-  (test-group
-    ((create-file "C1.compact"
-       '(
-         "export circuit foo(x: Uint<16>): Uint<16> { return x; }"
-         ))
-     (custom-check
-       (lambda (pass-name x)
-         (let ([fn (format "~a/C1/compiler/contract-info.json" testdir)])
-           (replace-value-in-json fn '("circuits" "name") "f")))))
-    ((create-file "testfile.compact"
-       '(
-         "contract C1 { circuit foo(x: Uint<16>): Uint<16>; }"
-         ))
-      (oops
-       message: "~a:\n  ~?"
-       irritants: '("testfile.compact line 1 char 15" "contract declaration has a circuit named ~s, but it is not present in the actual contract definition" (foo)))
-     ))
-
-  (test-group
-    ((create-file "C1.compact"
-       '(
-         "export pure circuit foo(x: Uint<16>): Uint<16> { return x; }"
-         ))
-     (custom-check
-       (lambda (pass-name x)
-         (let ([fn (format "~a/C1/compiler/contract-info.json" testdir)])
-           (replace-value-in-json fn '("circuits" "pure") #f)))))
-    ((create-file "testfile.compact"
-       '(
-         "contract C1 { pure circuit foo(x: Uint<16>): Uint<16>; }"
-         ))
-      (oops
-       message: "~a:\n  ~?"
-       irritants: '("testfile.compact line 1 char 15" "contract declaration claims circuit ~s is pure, but it is not in the actual contract definition" (foo)))
-     ))
-
-  (test-group
-    ((create-file "C1.compact"
-       '(
-         "export pure circuit foo(x: Uint<16>): Uint<16> { return x; }"
-         ))
-      (succeeds)
-     (custom-check
-       (lambda (pass-name x)
-         (let ([fn (format "~a/C1/compiler/contract-info.json" testdir)])
-           (replace-value-in-json fn '("circuits" "pure") 16)))))
-    ((create-file "testfile.compact"
-       '(
-         "contract C1 { pure circuit foo(x: Uint<16>): Uint<16>; }"
-         ))
-      (oops
-       message: "malformed contract-info file ~a for ~s: ~a; try recompiling ~a"
-       irritants: '("compiler/testdir/C1/compiler/contract-info.json" C1 "expected a boolean, got 16" C1))
-     ))
 
   (test-group
     ((create-file "C1.compact"
@@ -36881,27 +36290,6 @@ groups than for single tests.
              (seq
                (public-ledger %contract_c.1 (0) write %c.0)
                (tuple))))))
-     ))
-
-  (test-group
-    ((create-file "C.compact"
-       '(
-         "export circuit foo(x: [Boolean, Bytes<32>]): [] { return; }"
-         "export pure circuit bar(): Bytes<32> { return pad(32, ''); }"
-         ))
-     (succeeds))
-    ((create-file "testfile.compact"
-       '(
-         "contract C {"
-         "  circuit foo(x: Bytes<32>): [];"
-         "  pure circuit bar(): Bytes<32>;"
-         "}"
-         "sealed ledger contract_c: C;"
-         "constructor(c: C) {contract_c = disclose(c);}"
-         ))
-     (oops
-       message: "~a:\n  ~?"
-       irritants: '("testfile.compact line 2 char 3" "contract declaration claims the type of circuit ~s argument ~s is ~a, but in the actual contract definition it is ~a" (foo 1 "Bytes<32>" "[Boolean, Bytes<32>]")))
      ))
 
   (test-group
@@ -83322,6 +82710,195 @@ groups than for single tests.
         "  });"
         ))
     )
+
+  ; cyclic external contract calls.
+  ; this should either be an error at contract C1 or C2 load time or it should actually work
+  (test-group
+    ((create-file "C1.compact"
+       '(
+         "import CompactStandardLibrary;"
+         "contract C2 {"
+         "  circuit foo2(): [];"
+         "  pure circuit bar2(): Field;"
+         "}"
+         "sealed ledger contract_c: C2;"
+         "constructor(c2:C2) {contract_c = disclose(c2);}"
+         "export circuit foo(): [] { return contract_c.foo2(); }"
+         ; TODO(201) cross-contract calls to pure circuits are not presently supported
+         "export circuit bar(): Field { return 0 /* contract_c.bar2() */; }"
+         ))
+     (stage-javascript C1 '()))
+    ((create-file "C2.compact"
+       '(
+         "export circuit foo2(): [] { return; }"
+         "export pure circuit bar2(): Field { return 2;}"
+         ))
+     (stage-javascript C2 '()))
+    ((create-file "testfile.compact"
+       '(
+         "import CompactStandardLibrary;"
+         "contract C1 {"
+         "  circuit foo(): [];"
+         "  circuit bar(): Field;"
+         "}"
+         "ledger contract_c: C1;"
+         "constructor(c1: C1) {contract_c = disclose(c1);}"
+         "export circuit foofoo(): [] {const x = contract_c.foo(); return;}"
+         ))
+     ; TODO(201): awaiting implementation of load/init-time checks
+     (stage-javascript '()))
+     )
+
+  ; subcontract doesn't conform to the contract declaration
+  ; bar is claimed to be pure but isn't
+  ; this should be caught at C2 load or initialization time
+  (test-group
+    ((create-file "C1.compact"
+       '(
+         "export circuit foo(x: [Boolean, Bytes<32>]): [] { return; }"
+         "export pure circuit bar(): Bytes<32> { return pad(32, ''); }"
+         ))
+     (stage-javascript C1 '()))
+    ((create-file "C2.compact"
+       '(
+         "contract C1 {"
+         "  circuit foo(x: Bytes<32>): [];"
+         "  pure circuit bar(): Bytes<32>;"
+         "}"
+         "sealed ledger contract_c: C1;"
+         "constructor(c: C1) { contract_c = disclose(c); }"
+         ))
+     ; TODO(201): awaiting implementation of load/init-time checks
+     (stage-javascript C2 '())
+    ))
+
+  ; subcontract doesn't conform to the contract declaration
+  ; bar is claimed to be pure but isn't
+  ; this should be caught at C2 load or initialization time
+  (test-group
+    ((create-file "C1.compact"
+       '(
+         "import CompactStandardLibrary;"
+         "ledger X: Bytes<32>;"
+         "export circuit foo(x: Bytes<32>): [] { X = disclose(x); }"
+         "export circuit bar(): Bytes<32> { return X; }"
+         ))
+     (stage-javascript C1 '()))
+    ((create-file "C2.compact"
+       '(
+         "import CompactStandardLibrary;"
+         "contract C1 {"
+         "  circuit foo(x: Bytes<32>): [];"
+         "  pure circuit bar(): Bytes<32>;"
+         "}"
+         "ledger contract_c: C1;"
+         "constructor (c: C1) { contract_c = disclose(c); }"
+         "export circuit hello(): [] { return contract_c.foo(contract_c.read().bar()); }"
+         ))
+     ; TODO(201): awaiting implementation of load/init-time checks
+     (stage-javascript C2 '()))
+     )
+
+  ; subcontract doesn't conform to the contract declaration
+  ; foo is claimed to take a Field argument but doesn't
+  ; this should be caught at C2 load or initialization time
+  (test-group
+    ((create-file "C1.compact"
+       '(
+         "export circuit foo(): [] { return; }"
+         "export circuit bar(): Field { return 3; }"
+         ))
+     (stage-javascript C1 '()))
+    ((create-file "C2.compact"
+       '(
+         "import CompactStandardLibrary;"
+         "contract C1 {"
+         "  circuit foo(x: Field): [];"
+         "  pure circuit bar(): Field;"
+         "}"
+         "ledger contract_c: C1;"
+         "constructor(){contract_c = default<C1>;}"
+         ))
+     ; TODO(201): awaiting implementation of load/init-time checks
+     (stage-javascript C2 '())
+     ))
+
+  ; subcontract doesn't conform to the contract declaration
+  ; foo argument 1 is claimed to have type Uint<16>, but in the actual contract definition it is Uint<8>
+  ; this should be caught at C2 load or initialization time
+  (test-group
+    ((create-file "C1.compact"
+       '(
+         "export circuit foo(x: Uint<16>): Uint<8> { return x as Uint<8>; }"
+         "export circuit bar(): Field { return 3; }"
+         ))
+     (stage-javascript C1 '()))
+    ((create-file "C2.compact"
+       '(
+         "module M {"
+         "  export contract C1 {"
+         "    circuit foo(x: Uint<8>): Uint<8>;"
+         "    pure circuit bar(): Field;"
+         "  }"
+         "}"
+         "import M prefix $;"
+         "ledger c: $C1;"
+         "constructor($c: $C1) {"
+         "  const c = $c;"
+         "}"
+         ))
+     ; TODO(201): awaiting implementation of load/init-time checks
+     (stage-javascript C2 '())
+     ))
+
+  ; subcontract doesn't conform to the contract declaration
+  ; foo is claimed to have an (exported) circuit foo, but it doesn't
+  ; this should be caught at C2 load or initialization time
+  (test-group
+    ((create-file "C1.compact"
+       '(
+         "circuit foo(x: Field): Boolean {"
+         "  return x == 3;"
+         "}"))
+     (stage-javascript C1 '()))
+    ; TODO(201) this needs to be expanded to actually make a call to foo
+    ((create-file "C2.compact"
+       `(
+         "module M {"
+         "  export contract C1 {"
+         "    circuit foo(x: Field): Boolean;"
+         "  }"
+         "}"
+         "import M;"
+         ))
+     ; TODO(201): awaiting implementation of load/init-time checks
+     (stage-javascript C2 '())
+    ))
+
+  ; subcontract doesn't conform to the contract declaration
+  ; bar is claimed to return Bytes<64> but actually returns Bytes<32>
+  ; this should be caught at C2 load or initialization time
+  (test-group
+    ((create-file "C1.compact"
+       '(
+         "import CompactStandardLibrary;"
+         "ledger Q: Bytes<32>;"
+         "export circuit bar(): Bytes<32> { return Q; }"
+         ))
+     (stage-javascript C1 '()))
+    ((create-file "C2.compact"
+       '(
+         "import CompactStandardLibrary;"
+         "contract C1 {"
+         "  circuit bar(): Bytes<64>;"
+         "}"
+         "ledger contract_c: C1;"
+         "constructor (c: C1) { contract_c = disclose(c); }"
+         "export circuit hello(): Bytes<64> { return contract_c.read().bar(); }"
+         ))
+     ; TODO(201): awaiting implementation of load/init-time checks
+     (stage-javascript C2 '())
+    ))
 )
 
 (run-javascript)

@@ -4190,9 +4190,10 @@
        ir]))
 
   (define-pass identify-pure-circuits : Lnodca (ir) -> Lnodca ()
-    ; impure circuits are those that might touch public state, call any witnesses, or
-    ; call any other impure circuits.  pure circuits are those that are not impure.
-    ; we presently assume that all native circuits are pure.
+    ; impure circuits are those that might touch public state, call any witnesses,
+    ; call any other impure circuits (including via cross-contract calls).  pure
+    ; circuits are those that are not impure.  we presently assume that all native
+    ; circuits are pure.
     (definitions
       (define-condition-type &impure-condition &condition
         make-impure-condition impure-condition?
