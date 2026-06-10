@@ -28,8 +28,13 @@
           (runtime-version)
           (pass-helpers))
 
+  (define (save-contract-info ir proof-circuit-name*)
+    (let ([op (get-target-port 'contract-info.json)])
+      (print-json op (extract-contract-info ir proof-circuit-name*)))
+    ir)
+
   ; NB: must come after identify-pure-circuits
-  (define-pass save-contract-info : Lnodisclose (ir proof-circuit-name*) -> Lnodisclose ()
+  (define-pass extract-contract-info : Lnodisclose (ir proof-circuit-name*) -> * (json)
     (definitions
       ;; Flatten a Public-Ledger-Array B-tree into a list of Public-Ledger-Binding nodes.
       (define (flatten-pl-array pl-array)
@@ -99,43 +104,40 @@
                          (list->vector (map Type type*)))
                        (cons "result-type" (Type type))))
                    elt-name* pure-dcl* type** type*))))))
-    (Program : Program (ir) -> Program ()
+    (Program : Program (ir) -> * (json)
       [(program ,src (,contract-type* ...) ((,export-name* ,name*) ...) ,pelt* ...)
-       (let ([op (get-target-port 'contract-info.json)])
-         (print-json op
-           (list
-             (cons
-               "compiler-version"
-               compiler-version-string)
-             (cons
-               "language-version"
-               language-version-string)
-             (cons
-               "runtime-version"
-               runtime-version-string)
-             (cons
-               "circuits"
-               (list->vector
-                 (let ([export-alist (map cons export-name* name*)])
-                   (fold-right
-                     (lambda (pelt circuit*) (exported-circuit pelt circuit* export-alist))
-                     '()
-                     pelt*))))
-             (cons
-               "witnesses"
-               (list->vector (fold-right Witness '() pelt*)))
-             (cons
-               "contracts"
-               (list->vector
-                 (map (lambda (ct)
-                        (nanopass-case (Lnodisclose Contract-Type) ct
-                          [(tcontract ,src ,contract-name (,elt-name* ,pure-dcl* (,type** ...) ,type*) ...)
-                           (tcontract-tail contract-name elt-name* pure-dcl* type** type*)]))
-                      contract-type*)))
-             (cons
-               "ledger"
-               (list->vector (fold-right LedgerField '() pelt*))))))
-       ir])
+       (list
+         (cons
+           "compiler-version"
+           compiler-version-string)
+         (cons
+           "language-version"
+           language-version-string)
+         (cons
+           "runtime-version"
+           runtime-version-string)
+         (cons
+           "circuits"
+           (list->vector
+             (let ([export-alist (map cons export-name* name*)])
+               (fold-right
+                 (lambda (pelt circuit*) (exported-circuit pelt circuit* export-alist))
+                 '()
+                 pelt*))))
+         (cons
+           "witnesses"
+           (list->vector (fold-right Witness '() pelt*)))
+         (cons
+           "contracts"
+           (list->vector
+             (map (lambda (ct)
+                    (nanopass-case (Lnodisclose Contract-Type) ct
+                      [(tcontract ,src ,contract-name (,elt-name* ,pure-dcl* (,type** ...) ,type*) ...)
+                       (tcontract-tail contract-name elt-name* pure-dcl* type** type*)]))
+                  contract-type*)))
+         (cons
+           "ledger"
+           (list->vector (fold-right LedgerField '() pelt*))))])
     (Witness : Program-Element (ir witness*) -> * (json)
       [(witness ,src ,function-name (,arg* ...) ,type)
        (cons
@@ -278,7 +280,8 @@
            (Type type))]
       [(tadt ,src ,adt-name ([,adt-formal* ,adt-arg*] ...) ,vm-expr (,adt-op* ...) (,adt-rt-op* ...))
        (serialize-adt "type-name" adt-name adt-arg*)]
-      [else (assert cannot-happen)]))
+      [else (assert cannot-happen)])
+    (Program ir))
 
   (define-passes save-contract-info-passes
     (save-contract-info              Lnodisclose))
