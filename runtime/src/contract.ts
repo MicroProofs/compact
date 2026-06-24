@@ -440,9 +440,8 @@ const forbiddenCalleeWitnesses = (calleeAddress: ocrt.ContractAddress): Record<s
     {
       get: (_target, witnessName) => () => {
         throw new CompactError(
-          `Cross-contract callee '${calleeAddress}' invoked witness '${String(witnessName)}': ` +
-            `witnesses are only available to the entry (root) contract, not to a contract reached ` +
-            `via a cross-contract call`,
+          `Cross-contract callee '${calleeAddress}' invoked witness '${String(witnessName)}'; ` +
+            `calls to witnesses in non-root contracts are not yet supported`,
         );
       },
     },
