@@ -72343,7 +72343,7 @@ groups than for single tests.
     (output-file "compiler/testdir/contract/index.js"
       `(
         "import * as __compactRuntime from '@midnight-ntwrk/compact-runtime';"
-        "__compactRuntime.checkRuntimeVersion('0.17.102');"
+        "__compactRuntime.checkRuntimeVersion('0.17.104');"
         ""
         "const _descriptor_0 = __compactRuntime.CompactTypeField;"
         ""
@@ -86013,7 +86013,7 @@ groups than for single tests.
     (output-file "compiler/testdir/contract/index.js"
       `(
         "import * as __compactRuntime from '@midnight-ntwrk/compact-runtime';"
-        "__compactRuntime.checkRuntimeVersion('0.17.102');"
+        "__compactRuntime.checkRuntimeVersion('0.17.104');"
         ""
         "const _descriptor_0 = new __compactRuntime.CompactTypeBytes(32);"
         ""

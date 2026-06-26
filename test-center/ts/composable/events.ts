@@ -56,7 +56,7 @@ describe('events thread across a cross-contract call', () => {
     // Each entry is a well-formed, decoded event record.
     for (const ev of context.events) {
       expect(ev.version).toEqual(1);
-      expect(ev.eventType).toBeDefined();
+      expect(ev.eventType).toEqual('shielded-spend');
       expect(ev.data).toBeDefined();
     }
   });
@@ -77,5 +77,6 @@ describe('events thread across a cross-contract call', () => {
 
     expect(context.events.length).toEqual(1);
     expect(context.events[0].address).toEqual(inner.address);
+    expect(context.events[0].eventType).toEqual('shielded-spend');
   });
 });
