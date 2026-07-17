@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Toolchain 0.33.108, language 0.25.102, runtime 0.18.102]
+## [Toolchain 0.33.108, language 0.25.102, runtime 0.18.101]
 
 - Fix issue [#588](https://github.com/LFDT-Minokawa/compact/issues/588).  For
   the type `Uint<0..1>` (and enums with a single variant, which get lowered to
@@ -17,9 +17,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - The fix is to use an alignment of `bytes:1` for the type `Uint<0..1>`, so that
   the ZKIR code will expect the value provided by JS.
-  
-- The runtime version is bumped because the bug fix includes changes to the TS
-  descriptors for `CompactTypeEnum` and `CompactTypeUnsignedInteger`.
 
 ## [Toolchain 0.33.107, language 0.25.102, runtime 0.18.101]
 
